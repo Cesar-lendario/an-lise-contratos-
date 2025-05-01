@@ -16,8 +16,7 @@ const getApiKey = (): string => {
   }
   
   // Prioridade 3: Valor padrão para desenvolvimento local (não use em produção!)
-  console.warn('⚠️ Usando chave de API alternativa. Configure OPENAI_API_KEY nas variáveis de ambiente.');
-  return 'SUA_CHAVE_API_AQUI';
+  throw new Error('A chave da OpenAI não está configurada. Defina a variável de ambiente OPENAI_API_KEY no backend.');
 };
 
 const OPENAI_API_KEY = getApiKey();

@@ -12,6 +12,10 @@ import pdfParse from 'pdf-parse';
 
 // Importamos a biblioteca pdf-parse apenas quando necessário para processamento
 // Se estiver ocorrendo erro com arquivo de teste da biblioteca, podemos criar o diretório
+// Definição compatível com ES Modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 try {
   const testDir = path.join(__dirname, 'test', 'data');
   if (!fs.existsSync(testDir)) {
@@ -32,9 +36,6 @@ import {
   excluirContrato 
 } from './src/lib/db/models/contrato.js';
 
-// Obter diretório atual
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 // Configuração básica
 const app = express();
@@ -204,7 +205,8 @@ async function extractTextFromFile(filePath, fileType) {
 
 // Chave da API da OpenAI
 // Carrega as variáveis de ambiente do arquivo .env
-require('dotenv').config();
+import dotenv from 'dotenv';
+dotenv.config();
 
 // Obter a chave da API de forma segura
 const getApiKey = () => {
