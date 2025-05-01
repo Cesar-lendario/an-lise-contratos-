@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AdvContro - Teste de Análise de Contratos</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #2563eb;
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 10px;
+        }
+        .card {
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        button {
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        button:hover {
+            background-color: #1d4ed8;
+        }
+        button:disabled {
+            background-color: #93c5fd;
+            cursor: not-allowed;
+        }
+        .alert {
+            padding: 10px 15px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+        .alert-success {
+            background-color: #d1fae5;
+            border: 1px solid #10b981;
+            color: #065f46;
+        }
+        .alert-error {
+            background-color: #fee2e2;
+            border: 1px solid #ef4444;
+            color: #b91c1c;
+        }
+        .progress {
+            height: 20px;
+            width: 100%;
+            background-color: #e5e7eb;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            overflow: hidden;
+        }
+        .progress-bar {
+            height: 100%;
+            background-color: #2563eb;
+            width: 0;
+            transition: width 0.3s ease;
+        }
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 8px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        #results {
+            white-space: pre-wrap;
+            font-family: monospace;
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>AdvContro - Teste de Análise de Contratos</h1>
+    
+    <div class="card">
+        <h2>Upload de Contrato</h2>
+        <div id="alertContainer"></div>
+        
+        <form id="uploadForm">
+            <div class="form-group">
+                <label for="fileInput">Selecione um arquivo de contrato (.txt, .pdf, .docx)</label>
+                <input type="file" id="fileInput" accept=".txt,.pdf,.docx" />
+            </div>
+            
+            <div class="form-group">
+                <button type="submit" id="submitButton">Analisar Contrato</button>
+            </div>
+        </form>
+        
+        <div id="progressContainer" style="display: none;">
+            <p>Processando contrato...</p>
+            <div class="progress">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card" id="resultsCard" style="display: none;">
+        <h2>Resultados da Análise</h2>
+        <div id="results"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Obter chave da API de forma segura
+            const getApiKey = () => {
+                // Tenta obter do localStorage (usado apenas em ambiente de desenvolvimento)
+                const savedKey = localStorage.getItem('OPENAI_API_KEY');
+                if (savedKey) {
+                    return savedKey;
+                }
+                
+                // Se não encontrar, pede ao usuário
+                const key = prompt('Digite sua chave de API da OpenAI (será salva apenas localmente no seu navegador):', '');
+                if (key) {
+                    localStorage.setItem('OPENAI_API_KEY', key);
+                    return key;
+                }
+                
+                console.warn('Nenhuma chave de API fornecida!');
+                return 'SUA_CHAVE_API_AQUI';
+            };
+            
+            const apiKey = getApiKey();
+            const apiUrl = "https://api.openai.com/v1/chat/completions";
+            
+            const form = document.getElementById('uploadForm');
+            const fileInput = document.getElementById('fileInput');
+            const submitButton = document.getElementById('submitButton');
+            const progressContainer = document.getElementById('progressContainer');
+            const progressBar = document.getElementById('progressBar');
+            const resultsCard = document.getElementById('resultsCard');
+            const resultsDiv = document.getElementById('results');
+            const alertContainer = document.getElementById('alertContainer');
+            
+            // Simular progresso para feedback visual
+            function simulateProgress(duration) {
+                const interval = 100;
+                const steps = duration / interval;
+                let currentStep = 0;
+                
+                progressBar.style.width = '0%';
+                
+                const progressInterval = setInterval(() => {
+                    currentStep++;
+                    const percentage = Math.min((currentStep / steps) * 100, 95); // Cap at 95% until complete
+                    progressBar.style.width = percentage + '%';
+                    
+                    if (currentStep >= steps) {
+                        clearInterval(progressInterval);
+                    }
+                }, interval);
+                
+                return {
+                    complete: function() {
+                        clearInterval(progressInterval);
+                        progressBar.style.width = '100%';
+                    }
+                };
+            }
+            
+            // Mostrar alertas
+            function showAlert(message, type) {
+                alertContainer.innerHTML = `
+                    <div class="alert ${type === 'success' ? 'alert-success' : 'alert-error'}">
+                        ${message}
+                    </div>
+                `;
+                
+                // Auto-esconder após 5 segundos
+                setTimeout(() => {
+                    alertContainer.innerHTML = '';
+                }, 5000);
+            }
+            
+            // Extrair texto de arquivos
+            async function extractTextFromFile(file) {
+                showAlert(`Processando arquivo: ${file.name} (${file.type})`, 'success');
+                
+                try {
+                    // Para todos os tipos de arquivo, tentaremos ler como texto
+                    // Isso funciona bem para arquivos TXT e pode funcionar com PDFs e DOCXs simples
+                    const text = await file.text();
+                    
+                    // Se conseguimos ler algum texto, o usaremos
+                    if (text && text.trim().length > 0) {
+                        // Mostrar os primeiros 100 caracteres no console para verificação
+                        console.log('Texto extraído (primeiros 100 caracteres):', text.substring(0, 100));
+                        return text;
+                    }
+                    
+                    // Se o texto estiver vazio, continuamos com outros métodos
+                    console.warn('O texto extraído está vazio, tentando outros métodos...');
+                } catch (error) {
+                    console.warn('Erro ao ler o arquivo como texto:', error);
+                    // Continuamos com outros métodos
+                }
+                
+                // Para arquivos PDF e DOCX, precisaríamos de bibliotecas específicas
+                // mas como não podemos usá-las diretamente no navegador sem configuração adicional,
+                // vamos solicitar ao usuário que forneça o conteúdo do arquivo
+                
+                if (file.type === 'application/pdf' || file.type.includes('word')) {
+                    // Mostrar alerta sobre limitação
+                    showAlert(`Não foi possível extrair automaticamente o conteúdo do arquivo ${file.type}. Usando texto fornecido pelo usuário.`, 'error');
+                    
+                    // Solicitar ao usuário que cole o texto do contrato
+                    const userProvidedText = prompt(
+                        `Não foi possível extrair automaticamente o conteúdo do arquivo ${file.name}.\n\n` + 
+                        `Por favor, abra o arquivo em outro programa, copie seu conteúdo e cole-o aqui:`,
+                        '' // Valor inicial vazio
+                    );
+                    
+                    // Verificar se o usuário forneceu algum texto
+                    if (userProvidedText && userProvidedText.trim().length > 0) {
+                        return userProvidedText;
+                    }
+                    
+                    throw new Error('Texto do contrato não fornecido pelo usuário.');
+                }
+                
+                // Tipo de arquivo não suportado
+                throw new Error(`Tipo de arquivo não suportado: ${file.type}. Por favor, use arquivos TXT, PDF ou DOCX.`);
+            }
+            
+            // Analisar o contrato com a OpenAI
+            async function analyzeContract(contractText) {
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${apiKey}`
+                        },
+                        body: JSON.stringify({
+                            model: "gpt-4o",
+                            messages: [
+                                {
+                                    role: "system",
+                                    content: `Você é um assistente jurídico especializado em análise e aprimoramento de contratos. Sua tarefa é examinar minuciosamente o contrato fornecido (carregado) e oferecer sugestões detalhadas para melhorias, considerando os seguintes aspectos:
+
+1. Clareza e precisão da linguagem
+2. Cobertura adequada de todos os termos e condições essenciais
+3. Proteção legal para todas as partes envolvidas
+4. Conformidade com leis e regulamentos atuais
+5. Potenciais ambiguidades ou lacunas
+6. Detectar potenciais riscos e inconformidades nos termos contratuais.
+7. Equilíbrio entre as partes
+8. Cláusulas de rescisão e resolução de disputas
+9. Definições claras de termos-chave
+10. Adaptabilidade a mudanças futuras
+11. Possíveis riscos ou vulnerabilidades legais
+12. Examinar cláusulas de pagamento
+13. Confidencialidade e resolução de disputas
+
+Para cada sugestão de melhoria, forneça:
+- A cláusula ou seção específica que precisa de atenção
+- O problema ou preocupação identificado
+- Uma recomendação de otimização detalhada para abordar o problema
+- Justificativa legal ou prática para a mudança sugerida
+- Possíveis implicações da mudança para outras partes do contrato
+- Propor melhorias e renegociações que possam beneficiar as partes envolvidas.
+ 
+Além disso, identifique quaisquer cláusulas incomuns ou inovadoras que possam ser benéficas e explique por quê.
+
+Responda APENAS com um objeto JSON completo e válido, seguindo exatamente esta estrutura:
+
+{
+  "riskLevel": "low" | "medium" | "high",
+  "summary": "resumo do contrato",
+  "legalAnalysis": {
+    "clarityAndPrecision": {
+      "id": "string",
+      "title": "string",
+      "problem": "string",
+      "recommendation": "string",
+      "justification": "string",
+      "implications": "string"
+    },
+    "adequateCoverage": {
+      "id": "string",
+      "title": "string",
+      "problem": "string",
+      "recommendation": "string",
+      "justification": "string",
+      "implications": "string"
+    },
+    "legalProtection": {
+      "id": "string",
+      "title": "string",
+      "problem": "string",
+      "recommendation": "string",
+      "justification": "string",
+      "implications": "string"
+    },
+    "regulatoryCompliance": {
+      "id": "string",
+      "title": "string",
+      "positiveAspects": "string",
+      "improvementSuggestions": "string",
+      "justification": "string",
+      "implications": "string"
+    },
+    "ambiguitiesOrGaps": {
+      "id": "string",
+      "title": "string",
+      "problem": "string",
+      "recommendation": "string",
+      "justification": "string",
+      "implications": "string"
+    },
+    "potentialRisks": {
+      "id": "string",
+      "title": "string",
+      "problem": "string",
+      "recommendation": "string",
+      "justification": "string",
+      "implications": "string"
+    },
+    "partyBalance": {
+      "id": "string",
+      "title": "string",
+      "problem": "string",
+      "recommendation": "string",
+      "justification": "string",
+      "implications": "string"
+    },
+    "disputeResolution": {
+      "id": "string",
+      "title": "string",
+      "problem": "string",
+      "recommendation": "string",
+      "justification": "string",
+      "implications": "string"
+    },
+    "keyTermDefinitions": {
+      "id": "string",
+      "title": "string",
+      "problem": "string",
+      "recommendation": "string",
+      "justification": "string",
+      "implications": "string"
+    },
+    "futureAdaptability": {
+      "id": "string",
+      "title": "string",
+      "positiveAspects": "string",
+      "suggestion": "string",
+      "justification": "string",
+      "implications": "string"
+    },
+    "legalVulnerabilities": {
+      "id": "string",
+      "title": "string",
+      "problem": "string",
+      "recommendation": "string",
+      "justification": "string",
+      "implications": "string"
+    },
+    "paymentClauses": {
+      "id": "string",
+      "title": "string",
+      "positiveAspects": "string",
+      "problem": "string",
+      "recommendation": "string",
+      "justification": "string",
+      "implications": "string"
+    },
+    "confidentiality": {
+      "id": "string",
+      "title": "string",
+      "positiveAspects": "string",
+      "suggestion": "string",
+      "justification": "string",
+      "implications": "string"
+    }
+  },
+  "risks": [
+    {
+      "id": "string",
+      "title": "string",
+      "description": "string",
+      "severity": "low" | "medium" | "high"
+    }
+  ],
+  "deadlines": [
+    {
+      "id": "string",
+      "title": "string",
+      "date": "string",
+      "description": "string"
+    }
+  ],
+  "recommendations": [
+    {
+      "id": "string",
+      "title": "string",
+      "description": "string"
+    }
+  ]
+}`
+                                },
+                                {
+                                    role: "user",
+                                    content: contractText
+                                }
+                            ],
+                            temperature: 0.3,
+                            top_p: 0.9,
+                            max_tokens: 4000,
+                            response_format: { type: "json_object" }
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+                        throw new Error('Formato de resposta inesperado da API OpenAI');
+                    }
+                    
+                    return JSON.parse(data.choices[0].message.content);
+                } catch (error) {
+                    console.error('Erro ao analisar contrato:', error);
+                    throw error;
+                }
+            }
+            
+            // Manipular envio do formulário
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const file = fileInput.files[0];
+                if (!file) {
+                    showAlert('Por favor, selecione um arquivo para analisar.', 'error');
+                    return;
+                }
+                
+                // Preparar a interface
+                submitButton.disabled = true;
+                progressContainer.style.display = 'block';
+                resultsCard.style.display = 'none';
+                
+                // Simular progresso (apenas para feedback visual)
+                const progress = simulateProgress(30000); // 30 segundos estimados
+                
+                try {
+                    // Processar o arquivo
+                    const startTime = new Date();
+                    showAlert('Extraindo texto do contrato...', 'success');
+                    
+                    // Extrair texto do arquivo
+                    const contractText = await extractTextFromFile(file);
+                    
+                    showAlert('Analisando contrato com IA...', 'success');
+                    
+                    // Analisar o contrato
+                    const analysisResult = await analyzeContract(contractText);
+                    
+                    // Calcular tempo total
+                    const processingTime = Math.round((new Date() - startTime) / 1000);
+                    
+                    // Completar a barra de progresso
+                    progress.complete();
+                    
+                    // Exibir resultados
+                    resultsDiv.textContent = JSON.stringify(analysisResult, null, 2);
+                    resultsCard.style.display = 'block';
+                    
+                    showAlert(`Análise concluída em ${processingTime} segundos!`, 'success');
+                } catch (error) {
+                    showAlert(`Erro: ${error.message}`, 'error');
+                    console.error('Erro durante o processamento:', error);
+                } finally {
+                    submitButton.disabled = false;
+                    progressContainer.style.display = 'none';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

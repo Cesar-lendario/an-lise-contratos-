@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AdvContro - Análise de Contratos (Versão Simples)</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #2563eb;
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 10px;
+        }
+        .card {
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        button {
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        button:hover {
+            background-color: #1d4ed8;
+        }
+        button:disabled {
+            background-color: #93c5fd;
+            cursor: not-allowed;
+        }
+        .alert {
+            padding: 10px 15px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+        .alert-success {
+            background-color: #d1fae5;
+            border: 1px solid #10b981;
+            color: #065f46;
+        }
+        .alert-error {
+            background-color: #fee2e2;
+            border: 1px solid #ef4444;
+            color: #b91c1c;
+        }
+        #results {
+            white-space: pre-wrap;
+            font-family: monospace;
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>AdvContro - Análise de Contratos (Versão Simples)</h1>
+    
+    <div class="grid">
+        <div class="card">
+            <h2>Inserir Texto do Contrato</h2>
+            <div id="alertContainer"></div>
+            
+            <form id="analyzeForm">
+                <div class="form-group">
+                    <label for="contractText">Cole o texto do contrato abaixo:</label>
+                    <textarea id="contractText" placeholder="Cole o texto do contrato aqui..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <button type="submit" id="submitButton">Analisar Contrato</button>
+                </div>
+            </form>
+        </div>
+        
+        <div class="card" id="resultsCard">
+            <h2>Resultados da Análise (Simulados)</h2>
+            <div id="results"></div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('analyzeForm');
+            const contractTextArea = document.getElementById('contractText');
+            const submitButton = document.getElementById('submitButton');
+            const resultsDiv = document.getElementById('results');
+            const alertContainer = document.getElementById('alertContainer');
+            
+            // Mostrar alertas
+            function showAlert(message, type) {
+                alertContainer.innerHTML = `
+                    <div class="alert ${type === 'success' ? 'alert-success' : 'alert-error'}">
+                        ${message}
+                    </div>
+                `;
+                
+                // Auto-esconder após 5 segundos
+                setTimeout(() => {
+                    alertContainer.innerHTML = '';
+                }, 5000);
+            }
+            
+            // Função de exemplo que gera uma análise simulada
+            function simulateContractAnalysis(contractText) {
+                // Verificar se o texto do contrato foi fornecido
+                if (!contractText || contractText.trim().length < 50) {
+                    throw new Error("O texto do contrato é muito curto ou está vazio");
+                }
+                
+                // Determinar o nível de risco baseado no comprimento do contrato (simulação simples)
+                let riskLevel = "low";
+                if (contractText.length < 1000) {
+                    riskLevel = "high"; // Contratos muito curtos são mais arriscados
+                } else if (contractText.length < 3000) {
+                    riskLevel = "medium";
+                }
+                
+                // Verificar presença de palavras-chave para cláusulas críticas
+                const hasConfidentiality = contractText.toLowerCase().includes("confidencial");
+                const hasDispute = contractText.toLowerCase().includes("disputa") || 
+                                   contractText.toLowerCase().includes("litígio") ||
+                                   contractText.toLowerCase().includes("foro");
+                const hasPayment = contractText.toLowerCase().includes("pagamento") || 
+                                   contractText.toLowerCase().includes("valor");
+                const hasDeadline = contractText.toLowerCase().includes("prazo") || 
+                                   contractText.toLowerCase().includes("data");
+                
+                // Gerar resumo
+                const summary = `Contrato com aproximadamente ${contractText.length} caracteres. ` +
+                    `${hasConfidentiality ? 'Inclui cláusulas de confidencialidade. ' : ''}` +
+                    `${hasDispute ? 'Contém mecanismos de resolução de disputas. ' : ''}` +
+                    `${hasPayment ? 'Especifica termos de pagamento. ' : ''}` +
+                    `${hasDeadline ? 'Define prazos para execução. ' : ''}`;
+                
+                // Gerar análise legal simulada
+                return {
+                    riskLevel: riskLevel,
+                    summary: summary,
+                    legalAnalysis: {
+                        clarityAndPrecision: {
+                            id: "clarity-1",
+                            title: "Clareza e Precisão da Linguagem",
+                            problem: "Algumas cláusulas apresentam linguagem ambígua ou imprecisa.",
+                            recommendation: "Revisar o contrato para eliminar ambiguidades e termos imprecisos.",
+                            justification: "Linguagem clara e precisa é essencial para evitar disputas interpretativas.",
+                            implications: "Ambiguidades podem causar conflitos de interpretação e litígios futuros."
+                        },
+                        adequateCoverage: {
+                            id: "coverage-1",
+                            title: "Cobertura Adequada de Termos",
+                            problem: "Alguns termos essenciais podem estar ausentes no contrato.",
+                            recommendation: "Adicionar cláusulas que cubram todos os aspectos necessários da relação contratual.",
+                            justification: "Contratos completos reduzem riscos de disputas sobre aspectos não abordados.",
+                            implications: "A falta de cobertura adequada pode deixar partes vulneráveis a situações imprevistas."
+                        },
+                        legalProtection: {
+                            id: "protection-1",
+                            title: "Proteção Legal para as Partes",
+                            problem: "O nível de proteção legal pode ser desequilibrado entre as partes.",
+                            recommendation: "Equilibrar as proteções legais para todas as partes envolvidas.",
+                            justification: "Proteções equilibradas criam relações contratuais mais estáveis e justas.",
+                            implications: "Desequilíbrios podem gerar questionamentos sobre a validade do contrato."
+                        },
+                        regulatoryCompliance: {
+                            id: "compliance-1",
+                            title: "Conformidade Regulatória",
+                            positiveAspects: "O contrato menciona algumas regulamentações relevantes.",
+                            improvementSuggestions: "Atualizar referências a normas e regulamentos aplicáveis.",
+                            justification: "Conformidade regulatória é essencial para a validade e execução do contrato.",
+                            implications: "Não-conformidade pode resultar em penalidades legais e invalidade de cláusulas."
+                        },
+                        ambiguitiesOrGaps: {
+                            id: "gaps-1",
+                            title: "Ambiguidades ou Lacunas",
+                            problem: "Existem lacunas em cenários específicos de execução contratual.",
+                            recommendation: "Adicionar cláusulas que abordem cenários específicos identificados.",
+                            justification: "Contratos abrangentes reduzem espaço para interpretações divergentes.",
+                            implications: "Lacunas podem gerar disputas sobre como proceder em situações não previstas."
+                        },
+                        potentialRisks: {
+                            id: "risks-1",
+                            title: "Riscos Potenciais",
+                            problem: "Alguns riscos não estão adequadamente mitigados no contrato.",
+                            recommendation: "Adicionar cláusulas de mitigação para riscos identificados.",
+                            justification: "A antecipação de riscos protege ambas as partes de contingências.",
+                            implications: "Riscos não mitigados podem resultar em prejuízos financeiros significativos."
+                        },
+                        partyBalance: {
+                            id: "balance-1",
+                            title: "Equilíbrio entre as Partes",
+                            problem: "Algumas cláusulas podem ser consideradas onerosas para uma das partes.",
+                            recommendation: "Revisar e ajustar cláusulas para garantir equilíbrio contratual.",
+                            justification: "Contratos equilibrados têm maior chance de serem cumpridos integralmente.",
+                            implications: "Desequilíbrios extremos podem levar a revisões judiciais do contrato."
+                        },
+                        disputeResolution: {
+                            id: "dispute-1",
+                            title: "Resolução de Disputas",
+                            problem: hasDispute ? "Os mecanismos de resolução de disputas podem ser aprimorados." : "Ausência de mecanismos claros de resolução de disputas.",
+                            recommendation: hasDispute ? "Detalhar melhor os procedimentos de mediação e arbitragem." : "Adicionar cláusulas de mediação e arbitragem.",
+                            justification: "Mecanismos de resolução de disputas bem definidos reduzem custos de litígios.",
+                            implications: "Falta de clareza pode resultar em processos judiciais prolongados e dispendiosos."
+                        },
+                        keyTermDefinitions: {
+                            id: "terms-1",
+                            title: "Definições de Termos-Chave",
+                            problem: "Alguns termos técnicos ou específicos não estão claramente definidos.",
+                            recommendation: "Adicionar seção de definições para termos técnicos ou específicos.",
+                            justification: "Definições claras evitam mal-entendidos e interpretações divergentes.",
+                            implications: "Termos indefinidos podem causar confusão e disputas interpretativas."
+                        },
+                        futureAdaptability: {
+                            id: "adaptability-1",
+                            title: "Adaptabilidade a Mudanças Futuras",
+                            positiveAspects: "O contrato apresenta alguma flexibilidade para cenários futuros.",
+                            suggestion: "Adicionar mecanismos para adaptação a mudanças significativas no mercado ou legislação.",
+                            justification: "Contratos adaptáveis têm maior longevidade e eficácia.",
+                            implications: "Falta de adaptabilidade pode tornar o contrato obsoleto ou inviável."
+                        },
+                        legalVulnerabilities: {
+                            id: "vulnerabilities-1",
+                            title: "Vulnerabilidades Legais",
+                            problem: "Existem potenciais vulnerabilidades legais em algumas cláusulas.",
+                            recommendation: "Revisar e fortalecer cláusulas com potenciais vulnerabilidades.",
+                            justification: "Cláusulas juridicamente sólidas minimizam riscos de contestação.",
+                            implications: "Vulnerabilidades podem resultar em nulidade de cláusulas específicas."
+                        },
+                        paymentClauses: {
+                            id: "payment-1",
+                            title: "Cláusulas de Pagamento",
+                            positiveAspects: hasPayment ? "As condições de pagamento estão parcialmente definidas." : "N/A",
+                            problem: hasPayment ? "Há ambiguidades nas condições e cronograma de pagamento." : "Ausência de cláusulas detalhadas de pagamento.",
+                            recommendation: "Detalhar valores, datas, métodos e penalidades relacionadas a pagamentos.",
+                            justification: "Clareza em pagamentos é fundamental para relações comerciais saudáveis.",
+                            implications: "Ambiguidades podem gerar atrasos, disputas e problemas de fluxo de caixa."
+                        },
+                        confidentiality: {
+                            id: "confidentiality-1",
+                            title: "Confidencialidade",
+                            positiveAspects: hasConfidentiality ? "Existem menções à confidencialidade no contrato." : "N/A",
+                            suggestion: hasConfidentiality ? "Ampliar o escopo e detalhar as obrigações de confidencialidade." : "Adicionar cláusulas robustas de confidencialidade.",
+                            justification: "Proteção de informações sensíveis é essencial em relações comerciais modernas.",
+                            implications: "Proteção inadequada pode resultar em vazamentos e prejuízos significativos."
+                        }
+                    },
+                    risks: [
+                        {
+                            id: "r1",
+                            title: "Risco de Interpretação Ambígua",
+                            description: "Algumas cláusulas podem estar sujeitas a múltiplas interpretações.",
+                            severity: "medium"
+                        },
+                        {
+                            id: "r2",
+                            title: "Risco de Não Conformidade Regulatória",
+                            description: "O contrato pode não estar totalmente alinhado com regulamentações atuais.",
+                            severity: "high"
+                        },
+                        {
+                            id: "r3",
+                            title: "Risco de Disputas Relacionadas a Pagamentos",
+                            description: "Termos de pagamento não suficientemente detalhados podem gerar disputas.",
+                            severity: "medium"
+                        }
+                    ],
+                    deadlines: [
+                        {
+                            id: "d1",
+                            title: "Prazo de Execução",
+                            date: hasDeadline ? "Conforme especificado no contrato" : "Não especificado claramente",
+                            description: "Prazo para conclusão das obrigações contratuais principais."
+                        },
+                        {
+                            id: "d2",
+                            title: "Prazo de Vigência",
+                            date: "A determinar",
+                            description: "Período de validade do contrato."
+                        }
+                    ],
+                    recommendations: [
+                        {
+                            id: "rec1",
+                            title: "Revisão Jurídica Especializada",
+                            description: "Recomenda-se uma revisão completa por um advogado especializado na área."
+                        },
+                        {
+                            id: "rec2",
+                            title: "Atualização de Cláusulas Críticas",
+                            description: "Atualizar cláusulas de pagamento, confidencialidade e resolução de disputas."
+                        },
+                        {
+                            id: "rec3",
+                            title: "Adição de Definições",
+                            description: "Adicionar seção de definições para termos técnicos e específicos do contrato."
+                        }
+                    ]
+                };
+            }
+            
+            // Manipular envio do formulário
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const contractText = contractTextArea.value;
+                if (!contractText || contractText.trim().length === 0) {
+                    showAlert('Por favor, insira o texto do contrato para análise.', 'error');
+                    return;
+                }
+                
+                try {
+                    // Simular análise
+                    showAlert('Analisando contrato...', 'success');
+                    
+                    // Usar função simulada
+                    const analysisResult = simulateContractAnalysis(contractText);
+                    
+                    // Exibir resultados
+                    resultsDiv.textContent = JSON.stringify(analysisResult, null, 2);
+                    
+                    showAlert('Análise concluída com sucesso!', 'success');
+                } catch (error) {
+                    showAlert(`Erro: ${error.message}`, 'error');
+                    console.error('Erro durante a análise:', error);
+                }
+            });
+            
+            // Preencher com texto de exemplo ao carregar
+            contractTextArea.value = `CONTRATO DE PRESTAÇÃO DE SERVIÇOS
+
+Pelo presente instrumento particular de contrato de prestação de serviços, de um lado CONTRATANTE, pessoa jurídica de direito privado, inscrita no CNPJ sob o nº XX.XXX.XXX/0001-XX, com sede na Rua XXXX, nº XXX, Bairro XXXX, Cidade/UF, CEP XXXXX-XXX, neste ato representada por seu sócio administrador, Sr. XXXX, nacionalidade, estado civil, profissão, portador da cédula de identidade RG nº XXXXXXX e inscrito no CPF sob o nº XXX.XXX.XXX-XX, residente e domiciliado na Rua XXXX, nº XXX, Cidade/UF; e de outro lado CONTRATADA, pessoa jurídica de direito privado, inscrita no CNPJ sob o nº XX.XXX.XXX/0001-XX, com sede na Rua XXXX, nº XXX, Bairro XXXX, Cidade/UF, CEP XXXXX-XXX, neste ato representada por seu representante legal, Sr. XXXX, nacionalidade, estado civil, profissão, portador da cédula de identidade RG nº XXXXXXX e inscrito no CPF sob o nº XXX.XXX.XXX-XX, têm entre si, justo e contratado o seguinte:
+
+CLÁUSULA PRIMEIRA - DO OBJETO
+
+1.1. O presente contrato tem por objeto a prestação de serviços de desenvolvimento de software, conforme detalhado no Anexo I, que é parte integrante deste contrato.
+
+CLÁUSULA SEGUNDA - DO PRAZO
+
+2.1. O prazo para execução dos serviços é de 120 (cento e vinte) dias, contados a partir da assinatura deste contrato.
+
+CLÁUSULA TERCEIRA - DO VALOR E FORMA DE PAGAMENTO
+
+3.1. Pela prestação dos serviços, a CONTRATANTE pagará à CONTRATADA o valor total de R$ 50.000,00 (cinquenta mil reais), a serem pagos da seguinte forma:
+3.1.1. 30% (trinta por cento) na assinatura do contrato;
+3.1.2. 30% (trinta por cento) na entrega da primeira etapa do projeto;
+3.1.3. 40% (quarenta por cento) na entrega final do projeto.
+
+CLÁUSULA QUARTA - DAS OBRIGAÇÕES DA CONTRATADA
+
+4.1. Executar os serviços conforme especificado no Anexo I;
+4.2. Entregar os serviços dentro dos prazos estabelecidos;
+4.3. Manter sigilo sobre todas as informações a que tiver acesso em decorrência da prestação dos serviços.
+
+CLÁUSULA QUINTA - DAS OBRIGAÇÕES DA CONTRATANTE
+
+5.1. Fornecer à CONTRATADA todas as informações necessárias para a execução dos serviços;
+5.2. Efetuar os pagamentos dentro dos prazos estabelecidos;
+
+CLÁUSULA SEXTA - DA RESCISÃO
+
+6.1. O presente contrato poderá ser rescindido por qualquer das partes, mediante comunicação por escrito com antecedência mínima de 30 (trinta) dias.
+
+CLÁUSULA SÉTIMA - DAS PENALIDADES
+
+7.1. Em caso de atraso na entrega dos serviços, a CONTRATADA pagará multa de 1% (um por cento) sobre o valor total do contrato, por dia de atraso, limitada a 20% (vinte por cento) do valor total do contrato.
+7.2. Em caso de atraso no pagamento, a CONTRATANTE pagará multa de 10% (dez por cento) ao dia sobre o valor da parcela em atraso, além de juros de 1% (um por cento) ao mês.
+
+CLÁUSULA OITAVA - DO FORO
+
+8.1. Fica eleito o foro da comarca de São Paulo/SP para dirimir quaisquer dúvidas ou controvérsias oriundas do presente contrato, com renúncia a qualquer outro, por mais privilegiado que seja.
+
+E, por estarem assim justas e contratadas, as partes assinam o presente contrato em 2 (duas) vias de igual teor e forma, na presença de 2 (duas) testemunhas.
+
+São Paulo, 20 de abril de 2025.
+
+__________________________
+CONTRATANTE
+
+__________________________
+CONTRATADA
+
+Testemunhas:
+
+1. ________________________
+Nome:
+CPF:
+
+2. ________________________
+Nome:
+CPF:`;
+        });
+    </script>
+</body>
+</html>

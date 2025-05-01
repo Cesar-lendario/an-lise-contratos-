@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AdvContro - Upload de Contratos</title>
+    <!-- Biblioteca Marked.js para processamento de Markdown -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- Script personalizado para processamento de Markdown -->
+    <script src="js/markdown-processor.js" defer></script>
+    <!-- Script para gerenciamento das abas de resultado -->
+    <script src="js/result-tabs.js" defer></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #2563eb;
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 10px;
+            font-size: 2.25rem; /* Aumento de 50% no tamanho do título */
+        }
+        .card {
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 20px;
+        }
+        .tab {
+            padding: 10px 15px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            border-bottom: none;
+        }
+        .tab.active {
+            background-color: #f8f9fa;
+            border-color: #ddd;
+            border-radius: 4px 4px 0 0;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        button {
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        button:hover {
+            background-color: #1d4ed8;
+        }
+        button:disabled {
+            background-color: #93c5fd;
+            cursor: not-allowed;
+        }
+        .alert {
+            padding: 10px 15px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+        .alert-success {
+            background-color: #d1fae5;
+            border: 1px solid #10b981;
+            color: #065f46;
+        }
+        .alert-error {
+            background-color: #fee2e2;
+            border: 1px solid #ef4444;
+            color: #b91c1c;
+        }
+        textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+        .file-input-wrapper input[type=file] {
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+        .file-input-button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #e5e7eb;
+            color: #333;
+            border-radius: 4px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .file-name {
+            margin-left: 10px;
+            font-style: italic;
+        }
+        .progress {
+            height: 20px;
+            width: 100%;
+            background-color: #e5e7eb;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            overflow: hidden;
+        }
+        .progress-bar {
+            height: 100%;
+            background-color: #2563eb;
+            width: 0;
+            transition: width 0.3s ease;
+        }
+        #results {
+            white-space: pre-wrap;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            max-height: 500px;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+        
+        /* Estilos para Markdown renderizado */
+        #results h1 { font-size: 1.8em; margin-top: 1em; margin-bottom: 0.5em; }
+        #results h2 { font-size: 1.5em; margin-top: 1em; margin-bottom: 0.5em; }
+        #results h3 { font-size: 1.3em; margin-top: 1em; margin-bottom: 0.5em; }
+        #results strong { font-weight: bold; }
+        #results em { font-style: italic; }
+        #results ul { padding-left: 1.5em; list-style-type: disc; }
+        #results ol { padding-left: 1.5em; list-style-type: decimal; }
+        #results code { background-color: #e8e8e8; padding: 2px 4px; border-radius: 3px; }
+        #results blockquote { 
+            padding-left: 10px; 
+            border-left: 3px solid #ccc; 
+            margin: 0; 
+            color: #555; 
+            max-width: 95%;
+            word-wrap: break-word;
+        }
+        #results p { margin-bottom: 1em; }
+        
+        /* Estilos específicos para os títulos da análise */
+        #results h1 { font-size: 1.8em; color: #2563eb; }
+        #results h2 { font-size: 1.5em; color: #3b82f6; }
+        #results h3 { font-size: 1.3em; color: #60a5fa; }
+        
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 8px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Estilos para o conteúdo das abas de resultado */
+        .tab-content {
+            padding: 15px 0;
+        }
+        
+        /* Aplicar os mesmos estilos do #results para todas as abas de conteúdo */
+        [id$="-tab-content"] {
+            white-space: pre-wrap;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            max-height: 500px;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+        
+        /* Estilos para o ícone nas abas */
+        #result-tabs .tab {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>AdvContro - Análise de Contratos</h1>
+    
+    <div id="alertContainer"></div>
+    
+    <div class="tabs">
+        <div class="tab active" data-tab="upload">Upload de Arquivo</div>
+        <div class="tab" data-tab="text">Inserir Texto</div>
+    </div>
+    
+    <div class="tab-content active" id="upload-tab">
+        <div class="card">
+            <h2>Upload de Contrato</h2>
+            <p>Envie um arquivo de contrato nos formatos TXT, PDF ou DOCX para análise:</p>
+            
+            <form id="uploadForm">
+                <div class="form-group">
+                    <label for="fileInput">Selecione um arquivo:</label>
+                    <div class="file-input-wrapper">
+                        <div class="file-input-button">Escolher arquivo</div>
+                        <input type="file" id="fileInput" accept=".txt,.pdf,.docx" />
+                    </div>
+                    <span class="file-name" id="fileName">Nenhum arquivo selecionado</span>
+                </div>
+                
+                <div class="form-group">
+                    <button type="submit" id="uploadButton">Analisar Contrato</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <div class="tab-content" id="text-tab">
+        <div class="card">
+            <h2>Análise de Texto</h2>
+            <p>Cole o texto do contrato abaixo para análise:</p>
+            
+            <form id="textForm">
+                <div class="form-group">
+                    <label for="contractText">Texto do Contrato:</label>
+                    <textarea id="contractText" placeholder="Cole o texto do contrato aqui..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <button type="submit" id="analyzeButton">Analisar Contrato</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <div id="progressContainer" style="display: none;">
+        <div class="card">
+            <h2>Processando</h2>
+            <p>Analisando seu contrato. Este processo pode levar alguns segundos...</p>
+            <div class="progress">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card" id="resultsCard" style="display: none;">
+        <h2 style="font-size: 1.8rem;">Resultados da Análise</h2>
+        <div id="results-container">
+            <!-- As abas e conteúdos serão inseridos aqui pelo JavaScript -->
+        </div>
+    </div>
+    
+    <script>
+        // Elementos do DOM
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+        const fileInput = document.getElementById('fileInput');
+        const fileName = document.getElementById('fileName');
+        const uploadForm = document.getElementById('uploadForm');
+        const textForm = document.getElementById('textForm');
+        const contractText = document.getElementById('contractText');
+        const uploadButton = document.getElementById('uploadButton');
+        const analyzeButton = document.getElementById('analyzeButton');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressBar = document.getElementById('progressBar');
+        const resultsCard = document.getElementById('resultsCard');
+        const resultsContainer = document.getElementById('results-container');
+        const alertContainer = document.getElementById('alertContainer');
+        
+        // URL do servidor - Considerar o endereço completo do servidor local
+        const SERVER_URL = 'http://localhost:3000';
+        
+        // Inicializar com texto de exemplo
+        contractText.value = `CONTRATO DE PRESTAÇÃO DE SERVIÇOS
+
+Pelo presente instrumento particular de contrato de prestação de serviços, de um lado CONTRATANTE, pessoa jurídica de direito privado, inscrita no CNPJ sob o nº XX.XXX.XXX/0001-XX, com sede na Rua XXXX, nº XXX, Bairro XXXX, Cidade/UF, CEP XXXXX-XXX, neste ato representada por seu sócio administrador, Sr. XXXX, nacionalidade, estado civil, profissão, portador da cédula de identidade RG nº XXXXXXX e inscrito no CPF sob o nº XXX.XXX.XXX-XX, residente e domiciliado na Rua XXXX, nº XXX, Cidade/UF; e de outro lado CONTRATADA, pessoa jurídica de direito privado, inscrita no CNPJ sob o nº XX.XXX.XXX/0001-XX, com sede na Rua XXXX, nº XXX, Bairro XXXX, Cidade/UF, CEP XXXXX-XXX, neste ato representada por seu representante legal, Sr. XXXX, nacionalidade, estado civil, profissão, portador da cédula de identidade RG nº XXXXXXX e inscrito no CPF sob o nº XXX.XXX.XXX-XX, têm entre si, justo e contratado o seguinte:
+
+CLÁUSULA PRIMEIRA - DO OBJETO
+
+1.1. O presente contrato tem por objeto a prestação de serviços de desenvolvimento de software, conforme detalhado no Anexo I, que é parte integrante deste contrato.
+
+CLÁUSULA SEGUNDA - DO PRAZO
+
+2.1. O prazo para execução dos serviços é de 120 (cento e vinte) dias, contados a partir da assinatura deste contrato.
+
+CLÁUSULA TERCEIRA - DO VALOR E FORMA DE PAGAMENTO
+
+3.1. Pela prestação dos serviços, a CONTRATANTE pagará à CONTRATADA o valor total de R$ 50.000,00 (cinquenta mil reais), a serem pagos da seguinte forma:
+3.1.1. 30% (trinta por cento) na assinatura do contrato;
+3.1.2. 30% (trinta por cento) na entrega da primeira etapa do projeto;
+3.1.3. 40% (quarenta por cento) na entrega final do projeto.`;
+        
+        // Atualizar nome do arquivo selecionado
+        fileInput.addEventListener('change', function() {
+            if (this.files.length > 0) {
+                fileName.textContent = this.files[0].name;
+            } else {
+                fileName.textContent = 'Nenhum arquivo selecionado';
+            }
+        });
+        
+        // Configurar tabs
+        tabs.forEach(tab => {
+            tab.addEventListener('click', function() {
+                // Remover classe active de todas as tabs
+                tabs.forEach(t => t.classList.remove('active'));
+                tabContents.forEach(c => c.classList.remove('active'));
+                
+                // Adicionar classe active à tab clicada
+                this.classList.add('active');
+                
+                // Mostrar conteúdo correspondente
+                const tabId = `${this.dataset.tab}-tab`;
+                document.getElementById(tabId).classList.add('active');
+                
+                // Esconder resultados anteriores
+                resultsCard.style.display = 'none';
+            });
+        });
+        
+        // Mostrar alerta
+        function showAlert(message, type) {
+            alertContainer.innerHTML = `
+                <div class="alert ${type === 'success' ? 'alert-success' : 'alert-error'}">
+                    ${message}
+                </div>
+            `;
+            
+            // Auto-esconder após 5 segundos
+            setTimeout(() => {
+                alertContainer.innerHTML = '';
+            }, 5000);
+        }
+        
+        // Simular progresso
+        function simulateProgress(duration) {
+            const interval = 100;
+            const steps = duration / interval;
+            let currentStep = 0;
+            
+            progressBar.style.width = '0%';
+            
+            const progressInterval = setInterval(() => {
+                currentStep++;
+                const percentage = Math.min((currentStep / steps) * 100, 95); // Cap at 95% until complete
+                progressBar.style.width = percentage + '%';
+                
+                if (currentStep >= steps) {
+                    clearInterval(progressInterval);
+                }
+            }, interval);
+            
+            return {
+                complete: function() {
+                    clearInterval(progressInterval);
+                    progressBar.style.width = '100%';
+                }
+            };
+        }
+        
+        // Analisar texto
+        textForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const texto = contractText.value;
+            if (!texto || texto.trim().length === 0) {
+                showAlert('Por favor, insira o texto do contrato para análise.', 'error');
+                return;
+            }
+            
+            // Desabilitar botão e mostrar progresso
+            analyzeButton.disabled = true;
+            analyzeButton.innerHTML = '<span class="spinner"></span> Analisando...';
+            progressContainer.style.display = 'block';
+            resultsCard.style.display = 'none';
+            
+            // Simular progresso (apenas para feedback visual)
+            const progress = simulateProgress(25000); // 25 segundos estimados
+            
+            try {
+                // Enviar texto para o servidor
+                const response = await fetch(`${SERVER_URL}/analisar-texto`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ texto })
+                });
+                
+                // Verificar se a resposta foi bem-sucedida
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Erro ao processar o contrato');
+                }
+                
+                // Processar a resposta
+                const data = await response.json();
+                
+                // Completar a barra de progresso
+                progress.complete();
+                
+                // Mostrar os resultados
+                if (data.success && data.analysis) {
+                    if (data.format === "text") {
+                        // Inicializar as abas de resultado
+                        const resultsContainer = document.getElementById('results-container');
+                        resultsContainer.innerHTML = ''; // Limpar conteúdo anterior
+                        window.createResultTabs(resultsContainer);
+                        
+                        // Distribuir o conteúdo entre as abas
+                        window.distributeContentToTabs(data.analysis);
+                    } else {
+                        // Tentar formatar como JSON bonito
+                        try {
+                            const resultsContainer = document.getElementById('results-container');
+                            resultsContainer.innerHTML = ''; // Limpar conteúdo anterior
+                            const resultsDiv = document.createElement('div');
+                            resultsDiv.id = 'results';
+                            resultsContainer.appendChild(resultsDiv);
+                            resultsDiv.textContent = JSON.stringify(data.analysis, null, 2);
+                        } catch (jsonError) {
+                            console.warn('Erro ao formatar JSON:', jsonError);
+                            const resultsContainer = document.getElementById('results-container');
+                            resultsContainer.innerHTML = data.analysis;
+                        }
+                    }
+                    
+                    resultsCard.style.display = 'block';
+                    showAlert('Análise concluída com sucesso!', 'success');
+                } else {
+                    throw new Error('Formato de resposta inválido do servidor');
+                }
+            } catch (error) {
+                showAlert(`Erro: ${error.message}`, 'error');
+                console.error('Erro durante o processamento:', error);
+            } finally {
+                // Restaurar o botão
+                analyzeButton.disabled = false;
+                analyzeButton.innerHTML = 'Analisar Contrato';
+                progressContainer.style.display = 'none';
+            }
+        });
+        
+        // Upload e análise de arquivo
+        uploadForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const file = fileInput.files[0];
+            if (!file) {
+                showAlert('Por favor, selecione um arquivo para análise.', 'error');
+                return;
+            }
+            
+            // Verificar a extensão do arquivo
+            const fileExtension = file.name.split('.').pop().toLowerCase();
+            if (!['txt', 'pdf', 'docx'].includes(fileExtension)) {
+                showAlert('Tipo de arquivo não suportado. Use apenas TXT, PDF ou DOCX.', 'error');
+                return;
+            }
+            
+            // Desabilitar botão e mostrar progresso
+            uploadButton.disabled = true;
+            uploadButton.innerHTML = '<span class="spinner"></span> Enviando...';
+            progressContainer.style.display = 'block';
+            resultsCard.style.display = 'none';
+            
+            // Simular progresso (apenas para feedback visual)
+            const progress = simulateProgress(30000); // 30 segundos estimados
+            
+            try {
+                // Criar FormData para envio de arquivo
+                const formData = new FormData();
+                formData.append('arquivo', file);
+                
+                // Enviar arquivo para o servidor
+                const response = await fetch(`${SERVER_URL}/analisar-arquivo`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                // Verificar se a resposta foi bem-sucedida
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Erro ao processar o arquivo');
+                }
+                
+                // Processar a resposta
+                const data = await response.json();
+                
+                // Completar a barra de progresso
+                progress.complete();
+                
+                // Mostrar os resultados
+                if (data.success && data.analysis) {
+                    if (data.format === "text") {
+                        // Inicializar as abas de resultado
+                        const resultsContainer = document.getElementById('results-container');
+                        resultsContainer.innerHTML = ''; // Limpar conteúdo anterior
+                        window.createResultTabs(resultsContainer);
+                        
+                        // Distribuir o conteúdo entre as abas
+                        window.distributeContentToTabs(data.analysis);
+                    } else {
+                        // Tentar formatar como JSON bonito
+                        try {
+                            const resultsContainer = document.getElementById('results-container');
+                            resultsContainer.innerHTML = ''; // Limpar conteúdo anterior
+                            const resultsDiv = document.createElement('div');
+                            resultsDiv.id = 'results';
+                            resultsContainer.appendChild(resultsDiv);
+                            resultsDiv.textContent = JSON.stringify(data.analysis, null, 2);
+                        } catch (jsonError) {
+                            console.warn('Erro ao formatar JSON:', jsonError);
+                            const resultsContainer = document.getElementById('results-container');
+                            resultsContainer.innerHTML = data.analysis;
+                        }
+                    }
+                    
+                    resultsCard.style.display = 'block';
+                    showAlert(`Análise do arquivo "${data.fileName}" concluída com sucesso!`, 'success');
+                } else {
+                    throw new Error('Formato de resposta inválido do servidor');
+                }
+            } catch (error) {
+                showAlert(`Erro: ${error.message}`, 'error');
+                console.error('Erro durante o upload ou processamento:', error);
+            } finally {
+                // Restaurar o botão
+                uploadButton.disabled = false;
+                uploadButton.innerHTML = 'Analisar Contrato';
+                progressContainer.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
